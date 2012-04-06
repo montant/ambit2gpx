@@ -81,6 +81,7 @@ class AmbitXMLParser(object):
 def usage():
     print """
 ambit2gpx filename
+Creates a file filename.gpx in GPX format from filename in Suunto Ambit XML format.
 """
 
 def main():
