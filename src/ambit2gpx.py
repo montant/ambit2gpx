@@ -15,13 +15,6 @@ def childElements(parent):
         elements.append(child)
     return elements
 
-def getText(nodelist):
-    rc = ""
-    for node in nodelist:
-        if node.nodeType == node.TEXT_NODE:
-            rc = rc + node.data
-    return rc
-
 class AmbitXMLParser(object):
     __root = None
     __outputfile = None
