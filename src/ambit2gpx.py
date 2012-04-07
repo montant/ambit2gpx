@@ -25,16 +25,17 @@ def getText(nodelist):
 class AmbitXMLParser(object):
     __root = None
     __outputfile = None
-    def __init__(self, xml_node, outputfile):
+    def __init__(self, xml_node, altibaro, outputfile):
         assert isinstance(xml_node,xml.dom.Node)
         assert xml_node.nodeType == xml_node.ELEMENT_NODE
         self.__root = xml_node
         self.__outputfile = outputfile
+        self.__altibaro = altibaro
+        self.__altitude = None
 
     def __parse_sample(self, sample):
         latitude = None
         longitude = None
-        altitude = None
         time = None
         for node in childElements(sample):
             key = node.tagName
@@ -44,15 +45,17 @@ class AmbitXMLParser(object):
                 longitude = radian2degree(float(node.firstChild.nodeValue))
             if key == "UTC":
                 time = node.firstChild.nodeValue
-            if key == "GPSAltitude":
-                altitude = node.firstChild.nodeValue
+            if key == "Altitude" and self.__altibaro:
+                self.__altitude = node.firstChild.nodeValue
+            if key == "GPSAltitude" and not self.__altibaro:
+                self.__altitude = node.firstChild.nodeValue
         if latitude != None and longitude != None:
             print >>self.__outputfile, """
 <trkpt lat="{latitude}" lon="{longitude}">
     <ele>{altitude}</ele>
     <time>{time}</time>
 </trkpt>
-""".format(latitude=latitude, longitude=longitude, altitude=altitude, time=time)
+""".format(latitude=latitude, longitude=longitude, altitude=self.__altitude, time=time)
     def __parse_samples(self, samples):
         for node in childElements(samples):
             key = node.tagName
@@ -63,6 +66,11 @@ class AmbitXMLParser(object):
         print >>self.__outputfile,'<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'
         print >>self.__outputfile,"""
 <gpx xmlns="http://www.topografix.com/GPX/1/1" creator="ambit2gpx" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+ <metadata>
+    <link href="http://code.google.com/p/ambit2gpx/">
+      <text>Ambit2GPX</text>
+    </link>
+   </metadata>
   <trk>
     <trkseg>  
 """              
@@ -80,13 +88,14 @@ class AmbitXMLParser(object):
 
 def usage():
     print """
-ambit2gpx filename
+ambit2gpx [--altibaro] filename
 Creates a file filename.gpx in GPX format from filename in Suunto Ambit XML format.
+If option --altibaro is given, elevation is retrieved from altibaro information. The default is to retrieve GPS elevation information.
 """
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "h", ["help"])
+        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help","altibaro"])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -94,10 +103,13 @@ def main():
         sys.exit(2)
     output = None
     verbose = False
+    altibaro = False
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
             sys.exit()
+        elif o in ("-a", "--altibaro"):
+            altibaro = True
         else:
             assert False, "unhandled option"
     # ...
@@ -110,7 +122,7 @@ def main():
     top = doc.getElementsByTagName('top')
     assert len(top) == 1    
     outputfile = open(filename + '.gpx', 'w')
-    AmbitXMLParser(top[0], outputfile).execute()
+    AmbitXMLParser(top[0], altibaro, outputfile).execute()
         
 if __name__ == "__main__":
     main()
