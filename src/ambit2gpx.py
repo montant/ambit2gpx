@@ -25,6 +25,7 @@ class AmbitXMLParser(object):
         self.__outputfile = outputfile
         self.__altibaro = altibaro
         self.__altitude = None
+        self.__hr = None
 
     def __parse_sample(self, sample):
         latitude = None
@@ -38,6 +39,8 @@ class AmbitXMLParser(object):
                 longitude = radian2degree(float(node.firstChild.nodeValue))
             if key == "UTC":
                 time = node.firstChild.nodeValue
+            if key == "HR":
+                self.__hr = int(float(node.firstChild.nodeValue)*100)
             if key == "Altitude" and self.__altibaro:
                 self.__altitude = node.firstChild.nodeValue
             if key == "GPSAltitude" and not self.__altibaro:
@@ -47,8 +50,13 @@ class AmbitXMLParser(object):
 <trkpt lat="{latitude}" lon="{longitude}">
     <ele>{altitude}</ele>
     <time>{time}</time>
+    <extensions> 
+        <gpxtpx:TrackPointExtension> 
+        <gpxtpx:hr>{hr}</gpxtpx:hr> 
+        </gpxtpx:TrackPointExtension> 
+    </extensions>     
 </trkpt>
-""".format(latitude=latitude, longitude=longitude, altitude=self.__altitude, time=time)
+""".format(latitude=latitude, longitude=longitude, altitude=self.__altitude, time=time, hr=self.__hr)
     def __parse_samples(self, samples):
         for node in childElements(samples):
             key = node.tagName
