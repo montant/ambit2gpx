@@ -40,7 +40,7 @@ class AmbitXMLParser(object):
             if key == "UTC":
                 time = node.firstChild.nodeValue
             if key == "HR":
-                self.__hr = int(float(node.firstChild.nodeValue)*100)
+                self.__hr = int((float(node.firstChild.nodeValue))*60+0.5)
             if key == "Altitude" and self.__altibaro:
                 self.__altitude = node.firstChild.nodeValue
             if key == "GPSAltitude" and not self.__altibaro:
@@ -66,7 +66,12 @@ class AmbitXMLParser(object):
     def execute(self):   
         print >>self.__outputfile,'<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'
         print >>self.__outputfile,"""
-<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="ambit2gpx" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<gpx 
+xmlns="http://www.topografix.com/GPX/1/1"
+xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" 
+creator="ambit2gpx" version="1.1"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
  <metadata>
     <link href="http://code.google.com/p/ambit2gpx/">
       <text>Ambit2GPX</text>
