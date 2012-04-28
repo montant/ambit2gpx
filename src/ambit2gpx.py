@@ -122,16 +122,32 @@ def main():
         else:
             assert False, "unhandled option"
     # ...
+    
     filename = args[0]
+    (rootfilename, ext) = os.path.splitext(filename)
+    if (ext == ""):
+        filename += ".xml"
+    if (not os.path.exists(filename)):
+        print >>err, "File {0} doesn't exist".format(filename)
+        sys.exit()
     file = open(filename)
     file.readline() # Skip first line
     filecontents = file.read()
+    file.close()
+    
+    print "Parsing file {0}".format(filename)
     doc = xml.dom.minidom.parseString('<?xml version="1.0" encoding="utf-8"?><top>'+filecontents+'</top>')
     assert doc != None
     top = doc.getElementsByTagName('top')
     assert len(top) == 1    
-    outputfile = open(filename + '.gpx', 'w')
+    print "Done."
+    
+    outputfilename = rootfilename+ '.gpx'
+    outputfile = open(outputfilename, 'w')
+    print "Creating file {0}".format(outputfilename)
     AmbitXMLParser(top[0], altibaro, outputfile).execute()
+    outputfile.close()
+    print "Done."
         
 if __name__ == "__main__":
     main()
