@@ -102,9 +102,10 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
 
 def usage():
     print """
-ambit2gpx [--altibaro] filename
+ambit2gpx [--altibaro] [--nohr] filename
 Creates a file filename.gpx in GPX format from filename in Suunto Ambit XML format.
 If option --altibaro is given, elevation is retrieved from altibaro information. The default is to retrieve GPS elevation information.
+If option --nohr is given, hr data will not generated. Useful for instance if size of output file matters.
 """
 
 def main():
