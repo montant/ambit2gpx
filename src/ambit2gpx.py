@@ -18,7 +18,7 @@ def childElements(parent):
 class AmbitXMLParser(object):
     __root = None
     __outputfile = None
-    def __init__(self, xml_node, altibaro, outputfile):
+    def __init__(self, xml_node, altibaro, nohr, outputfile):
         assert isinstance(xml_node,xml.dom.Node)
         assert xml_node.nodeType == xml_node.ELEMENT_NODE
         self.__root = xml_node
@@ -26,9 +26,10 @@ class AmbitXMLParser(object):
         self.__altibaro = altibaro
         self.__altitude = None
         self.__hr = None
+        self.__nohr = nohr
         
     def extension(self,hr):
-        if (hr == None):
+        if (hr == None or self.__nohr == True):
             return ""
         return """
 <extensions> 
@@ -108,7 +109,7 @@ If option --altibaro is given, elevation is retrieved from altibaro information.
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help","altibaro"])
+        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help","altibaro", "nohr"])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -120,12 +121,15 @@ def main():
     output = None
     verbose = False
     altibaro = False
+    nohr = False
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
             sys.exit()
         elif o in ("-a", "--altibaro"):
             altibaro = True
+        elif o in ("--nohr"):
+            nohr = True
         else:
             assert False, "unhandled option"
     # ...
@@ -135,7 +139,7 @@ def main():
     if (ext == ""):
         filename += ".xml"
     if (not os.path.exists(filename)):
-        print >>err, "File {0} doesn't exist".format(filename)
+        print >>sys.stderr, "File {0} doesn't exist".format(filename)
         sys.exit()
     file = open(filename)
     file.readline() # Skip first line
@@ -152,7 +156,7 @@ def main():
     outputfilename = rootfilename+ '.gpx'
     outputfile = open(outputfilename, 'w')
     print "Creating file {0}".format(outputfilename)
-    AmbitXMLParser(top[0], altibaro, outputfile).execute()
+    AmbitXMLParser(top[0], altibaro, nohr, outputfile).execute()
     outputfile.close()
     print "Done."
         
