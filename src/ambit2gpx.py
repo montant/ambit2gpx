@@ -21,7 +21,7 @@ def childElements(parent):
 class AmbitXMLParser(object):
     __root = None
     __outputfile = None
-    def __init__(self, xml_node, suunto, noalti, altibaro, nohr, outputfile, lastdistance, first):
+    def __init__(self, xml_node, suunto, noalti, altibaro, noext, outputfile, lastdistance, first):
         assert isinstance(xml_node,xml.dom.Node)
         assert xml_node.nodeType == xml_node.ELEMENT_NODE
         self.__root = xml_node
@@ -33,21 +33,46 @@ class AmbitXMLParser(object):
         self.__latitude = None
         self.__longitude = None
         self.__hr = None
-        self.__nohr = nohr
+        self.__temperature = None
+        self.__cadence = None
+        self.__noext = noext
         self.__lastdistance = lastdistance
         self.__first = first
         self.__nb_samples_parsed = 0
         
-    def extension(self,hr):
-        if (hr == None or self.__nohr == True):
+    def extension(self,hr,temperature,cadence):
+        if (self.__noext == True):
             return ""
+        
+        extensionfound = False
+        
+        hrext = ""
+        if (hr != None):
+            extensionfound = True
+            hrext = "<gpxtpx:hr>{hr}</gpxtpx:hr>".format(hr=hr)
+            
+        tempext = ""
+        if (temperature != None):
+            extensionfound = True
+            tmpext = "<gpxtpx:atemp>{temp}</gpxtpx:atemp>".format(temp=temperature)
+            
+        cadext = ""    
+        if (cadence != None):
+            extensionfound = True
+            cadext = "<gpxtpx:cad>{hr}</gpxtpx:cad>".format(cadence=cadence)
+            
+        if not extensionfound:
+            return ""
+            
         return """
 <extensions> 
     <gpxtpx:TrackPointExtension> 
-        <gpxtpx:hr>{hr}</gpxtpx:hr> 
+    {hrext}
+    {tmpext}
+    {cadext}
     </gpxtpx:TrackPointExtension> 
 </extensions>
-""".format(hr=hr)           
+""".format(hrext=hrext,tmpext=tmpext,cadext=cadext)           
 
     def __parse_sample(self, sample,lastdistance, first):
         llatitude = None
@@ -61,31 +86,33 @@ class AmbitXMLParser(object):
                 sys.stdout.write("\n")
         for node in childElements(sample):
             key = node.tagName
-            if key == "Latitude":
+            if key.lower() == "latitude":
                 if not self.__suunto:
                     llatitude = radian2degree(float(node.firstChild.nodeValue))
                 else:
                     self.__latitude = radian2degree(float(node.firstChild.nodeValue))
-            if key == "Longitude":
+            if key.lower() == "longitude":
                 if not self.__suunto:
                     llongitude = radian2degree(float(node.firstChild.nodeValue))
                 else:
                     self.__longitude = radian2degree(float(node.firstChild.nodeValue))
-            if key == "UTC":
+            if key.lower() == "utc":
                 time = node.firstChild.nodeValue
-            if key == "HR":
+            if key.lower() == "hr":
                 self.__hr = int((float(node.firstChild.nodeValue))*60+0.5)
-            if key == "Altitude":
+            if key.lower() == "altitude":
                 if self.__noalti:
                     self.__altitude = 0
                 elif self.__altibaro:
                     self.__altitude = node.firstChild.nodeValue
-            if key == "GPSAltitude":
+            if key.lower() == "temperature":
+                self.__temperature = float(node.firstChild.nodeValue)-273
+            if key.lower() == "gpsaltitude":
                 if self.__noalti:
                     self.__altitude = 0
                 elif not self.__altibaro:
                     self.__altitude = node.firstChild.nodeValue
-            if key == "Distance":
+            if key.lower() == "distance":
                 distance = converttime(float(node.firstChild.nodeValue))
         if (not self.__suunto) and llatitude != None and llongitude != None:
             print >>self.__outputfile, """
@@ -94,7 +121,7 @@ class AmbitXMLParser(object):
     <time>{time}</time>
     {extension}  
 </trkpt>
-""".format(latitude=llatitude, longitude=llongitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr))
+""".format(latitude=llatitude, longitude=llongitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
         elif self.__suunto and self.__first and self.__latitude != None and self.__longitude != None:
             self.__first = False
             print >>self.__outputfile, """
@@ -103,7 +130,7 @@ class AmbitXMLParser(object):
     <time>{time}</time>
     {extension}  
 </trkpt>
-""".format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr))
+""".format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
         elif self.__suunto and self.__latitude != None and self.__longitude != None and distance > self.__lastdistance:
             self.__lastdistance = distance
             print >>self.__outputfile, """
@@ -112,12 +139,12 @@ class AmbitXMLParser(object):
     <time>{time}</time>
     {extension}  
 </trkpt>
-""".format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr))
+""".format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
 
     def __parse_samples(self, samples, lastdistance, first):
         for node in childElements(samples):
             key = node.tagName
-            if key == "sample":
+            if key.lower() == "sample":
                 self.__parse_sample(node,lastdistance, first)
       
     def execute(self):   
@@ -142,7 +169,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         fir = self.__first
         for node in childElements(root):
             key = node.tagName
-            if key == "samples":
+            if key.lower() == "samples":
                 self.__parse_samples(node, lastdist, fir)
                 
         print >>self.__outputfile,"""
@@ -153,17 +180,17 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
 
 def usage():
     print """
-ambit2gpx [--suunto] [--noalti] [--altibaro] [--nohr] filename
+ambit2gpx [--suunto] [--noalti] [--altibaro] [--noext] filename
 Creates a file filename.gpx in GPX format from filename in Suunto Ambit XML format.
 If option --suunto is given, only retain GPS fixes retained by Suunto distance algorithm.
 If option --noalti is given, elevation will be put to zero.
 If option --altibaro is given, elevation is retrieved from altibaro information. The default is to retrieve GPS elevation information.
-If option --nohr is given, hr data will not generated. Useful for instance if size of output file matters.
+If option --noext is given, extended data (hr, temperature, cadence) will not generated. Useful for instance if size of output file matters.
 """
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help", "suunto", "noalti", "altibaro", "nohr"])
+        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help", "suunto", "noalti", "altibaro", "noext"])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -177,7 +204,7 @@ def main():
     suunto = False
     noalti = False
     altibaro = False
-    nohr = False
+    noext = False
     lastdistance = 0
     first = True
     for o, a in opts:
@@ -190,8 +217,8 @@ def main():
             noalti = True
         elif o in ("-a", "--altibaro"):
             altibaro = True
-        elif o in ("--nohr"):
-            nohr = True
+        elif o in ("--noext"):
+            noext = True
         else:
             assert False, "unhandled option"
     # ...
@@ -218,7 +245,7 @@ def main():
     outputfilename = rootfilename+ '.gpx'
     outputfile = open(outputfilename, 'w')
     print "Creating file {0}".format(outputfilename)
-    AmbitXMLParser(top[0], suunto, noalti, altibaro, nohr, outputfile, lastdistance, first).execute()
+    AmbitXMLParser(top[0], suunto, noalti, altibaro, noext, outputfile, lastdistance, first).execute()
     outputfile.close()
     print "\nDone."
         
