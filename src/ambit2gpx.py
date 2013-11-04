@@ -51,7 +51,7 @@ class AmbitXMLParser(object):
             extensionfound = True
             hrext = "<gpxtpx:hr>{hr}</gpxtpx:hr>".format(hr=hr)
             
-        tempext = ""
+        tmpext = ""
         if (temperature != None):
             extensionfound = True
             tmpext = "<gpxtpx:atemp>{temp}</gpxtpx:atemp>".format(temp=temperature)
