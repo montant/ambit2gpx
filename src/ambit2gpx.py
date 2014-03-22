@@ -35,12 +35,13 @@ class AmbitXMLParser(object):
         self.__hr = None
         self.__temperature = None
         self.__cadence = None
+        self.__watts = None
         self.__noext = noext
         self.__lastdistance = lastdistance
         self.__first = first
         self.__nb_samples_parsed = 0
         
-    def extension(self,hr,temperature,cadence):
+    def extension(self,hr,temperature,cadence, watts):
         if (self.__noext == True):
             return ""
         
@@ -59,26 +60,33 @@ class AmbitXMLParser(object):
         cadext = ""    
         if (cadence != None):
             extensionfound = True
-            cadext = "<gpxtpx:cad>{hr}</gpxtpx:cad>".format(cadence=cadence)
+            cadext = "<gpxtpx:cad>{cadence}</gpxtpx:cad>".format(cadence=cadence)
+
+        wattext = ""    
+        if (watts != None):
+            extensionfound = True
+            wattext = "<power>{watts}</power>".format(watts=watts)
             
         if not extensionfound:
             return ""
             
         return """
 <extensions> 
-    <gpxtpx:TrackPointExtension> 
+  <gpxtpx:TrackPointExtension> 
     {hrext}
     {tmpext}
     {cadext}
-    </gpxtpx:TrackPointExtension> 
+  </gpxtpx:TrackPointExtension> 
+  {wattext}
 </extensions>
-""".format(hrext=hrext,tmpext=tmpext,cadext=cadext)           
+""".format(hrext=hrext,tmpext=tmpext,cadext=cadext,wattext=wattext)           
 
     def __parse_sample(self, sample,lastdistance, first):
         llatitude = None
         llongitude = None
         time = None
         distance = None
+
         self.__nb_samples_parsed += 1
         if self.__nb_samples_parsed % 100 == 0:
             sys.stdout.write(".")
@@ -100,6 +108,10 @@ class AmbitXMLParser(object):
                 time = node.firstChild.nodeValue
             if key.lower() == "hr":
                 self.__hr = int((float(node.firstChild.nodeValue))*60+0.5)
+            if key.lower() == "cadence":
+                self.__cadence = int((float(node.firstChild.nodeValue))*60+0.5)
+            if key.lower() == "bikepower":
+                self.__watts = float(node.firstChild.nodeValue)
             if key.lower() == "altitude":
                 if self.__noalti:
                     self.__altitude = 0
@@ -117,27 +129,27 @@ class AmbitXMLParser(object):
         if (not self.__suunto) and llatitude != None and llongitude != None:
             print >>self.__outputfile, """
 <trkpt lat="{latitude}" lon="{longitude}">
-    <ele>{altitude}</ele>
-    <time>{time}</time>
-    {extension}  
+  <ele>{altitude}</ele>
+  <time>{time}</time>
+{extension}  
 </trkpt>
-""".format(latitude=llatitude, longitude=llongitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
+""".format(latitude=llatitude, longitude=llongitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence,self.__watts))
         elif self.__suunto and self.__first and self.__latitude != None and self.__longitude != None:
             self.__first = False
             print >>self.__outputfile, """
 <trkpt lat="{latitude}" lon="{longitude}">
-    <ele>{altitude}</ele>
-    <time>{time}</time>
-    {extension}  
+  <ele>{altitude}</ele>
+  <time>{time}</time>
+{extension}  
 </trkpt>
 """.format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
         elif self.__suunto and self.__latitude != None and self.__longitude != None and distance > self.__lastdistance:
             self.__lastdistance = distance
             print >>self.__outputfile, """
 <trkpt lat="{latitude}" lon="{longitude}">
-    <ele>{altitude}</ele>
-    <time>{time}</time>
-    {extension}  
+  <ele>{altitude}</ele>
+  <time>{time}</time>
+{extension}  
 </trkpt>
 """.format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
 
