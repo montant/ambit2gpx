@@ -153,6 +153,19 @@ class AmbitXMLParser(object):
 </trkpt>
 """.format(latitude=self.__latitude, longitude=self.__longitude, altitude=self.__altitude, time=time, extension=self.extension(self.__hr,self.__temperature,self.__cadence))
 
+    def __parse_sml(self, sml, lastdistance, first):
+        for node in childElements(sml):
+            key = node.tagName
+            if key.lower() == "devicelog":
+                self.__parse_devicelog(node,lastdistance, first)
+                return
+
+    def __parse_devicelog(self, devicelog, lastdistance, first):
+        for node in childElements(devicelog):
+            key = node.tagName
+            if key.lower() == "samples":
+                self.__parse_samples(node,lastdistance, first)
+    
     def __parse_samples(self, samples, lastdistance, first):
         for node in childElements(samples):
             key = node.tagName
@@ -181,8 +194,9 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
         fir = self.__first
         for node in childElements(root):
             key = node.tagName
-            if key.lower() == "samples":
-                self.__parse_samples(node, lastdist, fir)
+            if key.lower() == "sml":
+                self.__parse_sml(node, lastdist, fir)
+                break
                 
         print >>self.__outputfile,"""
     </trkseg>        
