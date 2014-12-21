@@ -207,7 +207,7 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
 def usage():
     print """
 ambit2gpx [--suunto] [--noalti] [--altibaro] [--noext] filename
-Creates a file filename.gpx in GPX format from filename in Suunto Ambit XML format.
+Creates a file filename.gpx in GPX format from filename in Suunto Ambit SML format.
 If option --suunto is given, only retain GPS fixes retained by Suunto distance algorithm.
 If option --noalti is given, elevation will be put to zero.
 If option --altibaro is given, elevation is retrieved from altibaro information. The default is to retrieve GPS elevation information.
@@ -252,7 +252,7 @@ def main():
     filename = args[0]
     (rootfilename, ext) = os.path.splitext(filename)
     if (ext == ""):
-        filename += ".xml"
+        filename += ".sml"
     if (not os.path.exists(filename)):
         print >>sys.stderr, "File {0} doesn't exist".format(filename)
         sys.exit()
