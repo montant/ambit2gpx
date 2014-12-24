@@ -88,10 +88,13 @@ class AmbitXMLParser(object):
         distance = None
 
         self.__nb_samples_parsed += 1
+        
+        # Output some '.' for showing progress of conversion
         if self.__nb_samples_parsed % 100 == 0:
             sys.stdout.write(".")
             if self.__nb_samples_parsed % (80*100) == 0:
                 sys.stdout.write("\n")
+                
         for node in childElements(sample):
             key = node.tagName
             if key.lower() == "latitude":
@@ -107,9 +110,9 @@ class AmbitXMLParser(object):
             if key.lower() == "utc":
                 time = node.firstChild.nodeValue
             if key.lower() == "hr":
-                self.__hr = int((float(node.firstChild.nodeValue))*60+0.5)
+                self.__hr = int((float(node.firstChild.nodeValue))*60+0.5) # Rounding
             if key.lower() == "cadence":
-                self.__cadence = int((float(node.firstChild.nodeValue))*60+0.5)
+                self.__cadence = int((float(node.firstChild.nodeValue))*60+0.5) # Rounding
             if key.lower() == "bikepower":
                 self.__watts = float(node.firstChild.nodeValue)
             if key.lower() == "altitude":
@@ -118,6 +121,7 @@ class AmbitXMLParser(object):
                 elif self.__altibaro:
                     self.__altitude = node.firstChild.nodeValue
             if key.lower() == "temperature":
+                # Temperature come in Kelvin unit
                 self.__temperature = float(node.firstChild.nodeValue)-273
             if key.lower() == "gpsaltitude":
                 if self.__noalti:
